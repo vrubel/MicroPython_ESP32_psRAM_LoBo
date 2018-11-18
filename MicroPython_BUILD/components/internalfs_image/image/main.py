@@ -1,34 +1,28 @@
-import machine, network, utime
+from machine import reset # Импортируем для удобства вызова функции reset() из консоли repl
+import leds
+try:
+    # Все что отрабатывает до подъема сети, обернем в блок отлова ошибок
+    # Чтобы в любом случае, сеть у нас поднялась
+    import led_effects, leds
+    # Инициализируем объект эффекта - огонек бегущий по внешнему кольцу. С яркостью в 20%
+    effect = led_effects.EffectRunningLight(0, 0.2)
+    led_effects.startEffect(effect)
+except:
+    pass
 
-print("")
-print("Starting WiFi ...")
-sta_if = network.WLAN(network.STA_IF); sta_if.active(True)
-sta_if.connect("mySSID", "wifi_password")
-tmo = 50
-while not sta_if.isconnected():
-    utime.sleep_ms(100)
-    tmo -= 1
-    if tmo == 0:
-        sta_if.disconnect()
-        break
+import wifi
+import time
 
-if tmo > 0:
-    print("WiFi started")
-    utime.sleep_ms(500)
+# Остановим эффект. Выключим все светодиоды и включим центральное кольцо, на время поднятия веб-сервера
+led_effects.stopEffect()
+leds.setHoursHSB(40, 1, 0.2)
 
-    rtc = machine.RTC()
-    print("Synchronize time from NTP server ...")
-    rtc.ntp_sync(server="hr.pool.ntp.org")
-    tmo = 100
-    while not rtc.synced():
-        utime.sleep_ms(100)
-        tmo -= 1
-        if tmo == 0:
-            break
+#import webapp
 
-    if tmo > 0:
-        print("Time set")
-        utime.sleep_ms(500)
-        t = rtc.now()
-        utime.strftime("%c")
-        print("")
+# Моргнем всеми светодиодами, зеленым цветом
+leds.setAllHSB(120, 1, 1)
+time.sleep_ms(500)
+leds.setAllRGB(0)
+
+import machine
+i2c = machine.I2C(0, sda=4, scl=5)
