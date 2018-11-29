@@ -1,14 +1,35 @@
 import machine, config
 
 leds = machine.Neopixel(machine.Pin(config.pin_led), config.count_leds, machine.Neopixel.TYPE_RGB)
-leds.timings(((900,350), (350, 900), 60000))
+leds.timings(((1200,600), (600, 1200), 60000))
+adc=machine.ADC(32)
+adc.atten(adc.ATTN_6DB)
 
 import time
-def test():
-    for pos in range(1, 500000):
-        leds.set(1, 0xFF0000)
-        leds.show()
-        time.sleep_ms(50)
+def test(num_led):
+    period = 1800
+    for t in range(1, 24, 1):
+        print(t)
+        #leds.timings(((period-t,t), (t, period-t), 50000))
+
+        for pos in range(1, 20):
+            leds.set(num_led, 0x0f8000)
+            leds.show()
+            time.sleep_ms(100)
+
+def test_mic():
+    for t in range(1, 100000, 1):
+        v=adc.read()
+        v=v/1000
+        if(v>1.7):
+            setAllRGB(0x000f00)
+            print(v, end=' ')
+            time.sleep_ms(100)
+        else:
+            setAllRGB(0x000000)
+
+        time.sleep_ms(10)
+            
 
 
   ##################################################################################################
