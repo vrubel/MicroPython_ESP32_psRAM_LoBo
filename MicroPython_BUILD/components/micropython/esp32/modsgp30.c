@@ -273,7 +273,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_feature_set_version_obj, get_feature_set_ve
 STATIC mp_obj_t get_tvoc_factory_baseline(mp_obj_t self_in)
 {
 	u16 baseline;
-	sgp_get_tvoc_factory_baseline(&baseline);
+	sgp_get_tvoc_inceptive_baseline(&baseline);
     return mp_obj_new_int_from_uint(baseline);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_tvoc_factory_baseline_obj, get_tvoc_factory_baseline);
