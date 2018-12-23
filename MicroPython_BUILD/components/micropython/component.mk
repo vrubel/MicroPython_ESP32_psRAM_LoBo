@@ -244,6 +244,10 @@ ifdef CONFIG_MICROPY_USE_RFCOMM
 SRC_C += esp32/machine_rfcomm.c
 endif
 
+ifdef CONFIG_MICROPY_USE_IFUN_NEOPIXEL
+SRC_C += esp32/modifunneopixel.c
+endif
+
 EXTMOD_SRC_C = $(addprefix extmod/,\
 	modbtree.c \
 	)

@@ -338,6 +338,13 @@ extern const struct _mp_obj_module_t mp_module_bluetooth;
 #define BUILTIN_MODULE_BLUETOOTH
 #endif
 
+#ifdef CONFIG_MICROPY_USE_IFUN_NEOPIXEL
+extern const struct _mp_obj_module_t mp_module_ifun;
+#define BUILTIN_MODULE_IFUN_NEOPIXEL { MP_OBJ_NEW_QSTR(MP_QSTR_indicator), (mp_obj_t)&mp_module_ifun },
+#else
+#define BUILTIN_MODULE_IFUN_NEOPIXEL
+#endif
+
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_OBJ_NEW_QSTR(MP_QSTR_utime),    (mp_obj_t)&utime_module }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_uos),      (mp_obj_t)&uos_module }, \
@@ -348,6 +355,7 @@ extern const struct _mp_obj_module_t mp_module_bluetooth;
 	{ MP_OBJ_NEW_QSTR(MP_QSTR_uhashlib), (mp_obj_t)&mp_module_uhashlib }, \
 	BUILTIN_MODULE_DISPLAY \
 	BUILTIN_MODULE_SGP30_SENSOR \
+	BUILTIN_MODULE_IFUN_NEOPIXEL \
 	BUILTIN_MODULE_CURL \
     BUILTIN_MODULE_REQUESTS \
 	BUILTIN_MODULE_SSH \

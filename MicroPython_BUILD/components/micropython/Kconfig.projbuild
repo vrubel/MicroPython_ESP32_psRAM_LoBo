@@ -621,6 +621,13 @@ menu "MicroPython"
                 endchoice
 
         endmenu
+
+        config MICROPY_USE_IFUN_NEOPIXEL
+            bool "Use INDICATOR-FUN Neopixel Driver"
+            default y
+            help
+                Include driver for neopixel leds (from INDICATOR-FUN project) into build 
+
     endmenu
     menu "File systems"
         config MICROPY_FILESYSTEM_TYPE
