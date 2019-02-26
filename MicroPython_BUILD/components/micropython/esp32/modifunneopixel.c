@@ -185,6 +185,7 @@ STATIC mp_obj_t ifun_neopixel_deinit(mp_obj_t self_in)
 MP_DEFINE_CONST_FUN_OBJ_1(ifun_neopixel_deinit_obj, ifun_neopixel_deinit);
 
 
+//==============================================================================
 // Функция меняет на обратную последовательность бит в байте.
 // Старшие становятся младшими, а младшие старшими
 STATIC uint8_t reverse_bits(uint8_t original)
@@ -197,12 +198,30 @@ STATIC uint8_t reverse_bits(uint8_t original)
 
 
 
+//==============================================================================
+// Функция генерирует сигналы управления цепочкой светодиодов, из данных 
+// накопленных в буфере
+STATIC mp_obj_t ifun_neopixel_show(mp_obj_t self_in)
+{
+	ifun_neopixel_obj_t *self = self_in;
+
+    // Вызываем функцию SDL для передачи байтов.
+    // Для преобразования байтов в структуры RMT, будет задействована функция транслятор.
+    ESP_ERROR_CHECK(rmt_write_sample(RMT_TX_CHANNEL, self->rgb_data, COUNT_LEDS*3, true));
+
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(ifun_neopixel_show_obj, ifun_neopixel_show);
+
+
+
+//==============================================================================
 // Функция установки цвета светодиода (или нескольких последовательно)
 // Параметры:
 // pos      - номер светодиода в цепочке
 // color    - устанавливай цвет в виде целого числа, в котором каждые 8 бит - одна цветовая составляющая (0xRRGGBB)
 // num      - кол-во светодиодов (начиная с позиции pos) которым будет установлен цвет
-// update   - сгенерировать сигналы упрвления цепочной светодиодов
+// update   - сгенерировать сигналы управления цепочкой светодиодов
 STATIC mp_obj_t _ifun_neopixel_set(ifun_neopixel_obj_t *self, uint8_t pos, uint8_t R, uint8_t G, uint8_t B, uint8_t count, bool update)
 {
     if(pos > COUNT_LEDS) pos = COUNT_LEDS;
@@ -220,15 +239,13 @@ STATIC mp_obj_t _ifun_neopixel_set(ifun_neopixel_obj_t *self, uint8_t pos, uint8
     }
 
     if(update)
-    {
-        // Вызываем функцию SDL для передачи байтов.
-        // Для преобразования байтов в структуры RMT, будет задействована функция транслятор.
-        ESP_ERROR_CHECK(rmt_write_sample(RMT_TX_CHANNEL, self->rgb_data, COUNT_LEDS*3, true));
-    }
+        ifun_neopixel_show(self);
 
     return mp_const_none;
 }
 
+
+//==============================================================================
 // Функция установки цвета светодиода (или нескольких последовательно)
 // Параметры:
 // pos      - номер светодиода в цепочке
@@ -238,12 +255,73 @@ STATIC mp_obj_t _ifun_neopixel_set(ifun_neopixel_obj_t *self, uint8_t pos, uint8
 STATIC mp_obj_t ifun_neopixel_set(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
 {
     const mp_arg_t allowed_args[] = {
-        { MP_QSTR_pos,   MP_ARG_REQUIRED | MP_ARG_INT,  {.u_int = 1} },
-        { MP_QSTR_R, MP_ARG_REQUIRED | MP_ARG_INT,  {.u_int = 0} },
-        { MP_QSTR_G, MP_ARG_REQUIRED | MP_ARG_INT,  {.u_int = 0} },
-        { MP_QSTR_B, MP_ARG_REQUIRED | MP_ARG_INT,  {.u_int = 0} },
-        { MP_QSTR_num,                     MP_ARG_INT,  {.u_int = 1} },
-        { MP_QSTR_update,                  MP_ARG_BOOL, {.u_bool = true} }
+        { MP_QSTR_pos,      MP_ARG_REQUIRED | MP_ARG_INT,   {.u_int = 1} },
+        { MP_QSTR_color,    MP_ARG_REQUIRED | MP_ARG_INT,   {.u_int = 0} },
+        { MP_QSTR_num,      MP_ARG_INT,                     {.u_int = 1} },
+        { MP_QSTR_update,   MP_ARG_BOOL,                    {.u_bool = true} }
+    };
+
+    ifun_neopixel_obj_t *self = pos_args[0];
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    uint8_t pos = args[0].u_int;
+    uint32_t color = (uint32_t)args[1].u_int;
+    uint8_t count = args[2].u_int;
+    bool update = args[3].u_bool;
+
+    uint8_t R = (uint8_t) (color >> 16) & 0xff;
+    uint8_t G = (uint8_t) (color >> 8) & 0xff;
+    uint8_t B = (uint8_t) color & 0xff;
+
+    return _ifun_neopixel_set(self, pos, R, G, B, count, update);
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(ifun_neopixel_set_obj, 2, ifun_neopixel_set);
+
+
+
+//==============================================================================
+// Функция вовзращает цвет указанного в параметрах светодиода 
+// Параметры:
+// pos_in   - номер светодиода в цепочке
+STATIC mp_obj_t ifun_neopixel_get(mp_obj_t self_in, mp_obj_t pos_in)
+{
+    ifun_neopixel_obj_t *self = self_in;
+    uint8_t pos = mp_obj_get_int(pos_in);
+
+    if(pos > COUNT_LEDS) pos = COUNT_LEDS;
+    if(pos < 1) pos = 1;
+    pos-=1;
+
+    uint8_t R = (uint8_t) reverse_bits(self->rgb_data[pos*3+1]);
+    uint8_t G = (uint8_t) reverse_bits(self->rgb_data[pos*3]);
+    uint8_t B = (uint8_t) reverse_bits(self->rgb_data[pos*3+2]);
+
+    uint32_t res = R<<16 | G<<8 | B;
+
+    return mp_obj_new_int(res);
+}
+MP_DEFINE_CONST_FUN_OBJ_2(ifun_neopixel_get_obj, ifun_neopixel_get);
+
+
+
+//==============================================================================
+// Функция установки цвета светодиода (или нескольких последовательно)
+// Параметры:
+// pos      - номер светодиода в цепочке
+// color    - устанавливай цвет в виде целого числа, в котором каждые 8 бит - одна цветовая составляющая (0xRRGGBB)
+// num      - кол-во светодиодов (начиная с позиции pos) которым будет установлен цвет
+// update   - сгенерировать сигналы упрвления цепочной светодиодов
+STATIC mp_obj_t ifun_neopixel_setRGB(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
+{
+    const mp_arg_t allowed_args[] = {
+        { MP_QSTR_pos,      MP_ARG_REQUIRED | MP_ARG_INT,   {.u_int = 1} },
+        { MP_QSTR_R,        MP_ARG_REQUIRED | MP_ARG_INT,   {.u_int = 0} },
+        { MP_QSTR_G,        MP_ARG_REQUIRED | MP_ARG_INT,   {.u_int = 0} },
+        { MP_QSTR_B,        MP_ARG_REQUIRED | MP_ARG_INT,   {.u_int = 0} },
+        { MP_QSTR_num,      MP_ARG_INT,                     {.u_int = 1} },
+        { MP_QSTR_update,   MP_ARG_BOOL,                    {.u_bool = true} }
     };
 
     ifun_neopixel_obj_t *self = pos_args[0];
@@ -260,11 +338,12 @@ STATIC mp_obj_t ifun_neopixel_set(size_t n_args, const mp_obj_t *pos_args, mp_ma
 
     return _ifun_neopixel_set(self, pos, R, G, B, count, update);
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(ifun_neopixel_set_obj, 3, ifun_neopixel_set);
+MP_DEFINE_CONST_FUN_OBJ_KW(ifun_neopixel_setRGB_obj, 4, ifun_neopixel_setRGB);
 
 
-STATIC mp_obj_t ifun_neopixel_setHSB(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-
+//==============================================================================
+STATIC mp_obj_t ifun_neopixel_setHSB(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
+{
     const mp_arg_t allowed_args[] = {
         { MP_QSTR_pos,         MP_ARG_REQUIRED | MP_ARG_INT,  { .u_int = 0} },
         { MP_QSTR_hue,         MP_ARG_REQUIRED | MP_ARG_OBJ,  { .u_obj = mp_const_none } },
@@ -346,16 +425,19 @@ STATIC mp_obj_t ifun_neopixel_setHSB(size_t n_args, const mp_obj_t *pos_args, mp
 
     return _ifun_neopixel_set(self, pos, (uint8_t)(red * 255.0), (uint8_t)(green * 255.0), (uint8_t)(blue * 255.0), count, update);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(ifun_neopixel_setHSB_obj, 5, ifun_neopixel_setHSB);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(ifun_neopixel_setHSB_obj, 4, ifun_neopixel_setHSB);
 
 
 //==============================================================================
 // Определение таблицы состава класса
 // Указываются члены класса
 STATIC const mp_rom_map_elem_t ifun_neopixel_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_deinit),     (mp_obj_t)&ifun_neopixel_deinit_obj },
-    { MP_ROM_QSTR(MP_QSTR_set),     (mp_obj_t)&ifun_neopixel_set_obj },
-    { MP_ROM_QSTR(MP_QSTR_setHSB),     (mp_obj_t)&ifun_neopixel_setHSB_obj }
+    { MP_ROM_QSTR(MP_QSTR_deinit),      (mp_obj_t)&ifun_neopixel_deinit_obj },
+    { MP_ROM_QSTR(MP_QSTR_setRGB),      (mp_obj_t)&ifun_neopixel_setRGB_obj },
+    { MP_ROM_QSTR(MP_QSTR_setHSB),      (mp_obj_t)&ifun_neopixel_setHSB_obj },
+    { MP_ROM_QSTR(MP_QSTR_show),        (mp_obj_t)&ifun_neopixel_show_obj },
+    { MP_ROM_QSTR(MP_QSTR_set),         (mp_obj_t)&ifun_neopixel_set_obj},
+    { MP_ROM_QSTR(MP_QSTR_get),         (mp_obj_t)&ifun_neopixel_get_obj}
 };
 STATIC MP_DEFINE_CONST_DICT(ifun_neopixel_locals_dict, ifun_neopixel_locals_dict_table);
 
