@@ -94,13 +94,13 @@ STATIC mp_obj_t sgp30_make_new(const mp_obj_type_t *type, size_t n_args, size_t 
 //-----------------------------------------------------------------------------------------------
 STATIC void sgp30_printinfo(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
 {
-	u16 tvoc_ppb;
-	u16 co2_eq_ppm;
-	sgp_read_iaq(&tvoc_ppb, &co2_eq_ppm);
+	uint16_t tvoc_ppb;
+	uint16_t co2_eq_ppm;
+	sgp30_read_iaq(&tvoc_ppb, &co2_eq_ppm);
 
-	u16 ethanol_signal;
-	u16 h2_signal;
-	sgp_read_signals(&ethanol_signal, &h2_signal);
+	uint16_t ethanol_signal;
+	uint16_t h2_signal;
+	sgp30_read_raw(&ethanol_signal, &h2_signal);
 
 	mp_printf(print, "SGP30   (tvoc=%u ppb, co2_eq=%u ppm, ethanol=%u, h2=%u)\n", tvoc_ppb, co2_eq_ppm, ethanol_signal, h2_signal);
 }
@@ -110,7 +110,7 @@ STATIC void sgp30_printinfo(const mp_print_t *print, mp_obj_t self_in, mp_print_
 //-----------------------------------------------------------------------------------------------
 STATIC mp_obj_t sgp30_init(mp_obj_t self_in)
 {
-    return mp_obj_new_int(sgp_probe());
+    return mp_obj_new_int(sgp30_probe());
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(sgp30_init_obj, sgp30_init);
 
@@ -118,8 +118,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(sgp30_init_obj, sgp30_init);
 
 STATIC mp_obj_t get_serial_id(mp_obj_t self_in)
 {
-	u64 serial_id;
-	sgp_get_serial_id(&serial_id);
+	uint64_t serial_id;
+	sgp30_get_serial_id(&serial_id);
 
     return mp_obj_new_int_from_ull(serial_id);
 }
@@ -129,7 +129,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_serial_id_obj, get_serial_id);
 
 STATIC mp_obj_t get_driver_version(mp_obj_t self_in)
 {
-	const char * strver = sgp_get_driver_version();
+	const char * strver = sgp30_get_driver_version();
     return mp_obj_new_str(strver, strlen(strver));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_driver_version_obj, get_driver_version);
@@ -138,8 +138,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_driver_version_obj, get_driver_version);
 
 STATIC mp_obj_t measure_co2_eq_blocking_read(mp_obj_t self_in)
 {
-	u16 co2_eq_ppm;
-	sgp_measure_co2_eq_blocking_read(&co2_eq_ppm);
+	uint16_t co2_eq_ppm;
+	sgp30_measure_co2_eq_blocking_read(&co2_eq_ppm);
 
     return mp_obj_new_int(co2_eq_ppm);
 }
@@ -149,8 +149,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_co2_eq_blocking_read_obj, measure_co2_e
 
 STATIC mp_obj_t measure_tvoc_blocking_read(mp_obj_t self_in)
 {
-	u16 tvoc_ppb;
-	sgp_measure_tvoc_blocking_read(&tvoc_ppb);
+	uint16_t tvoc_ppb;
+	sgp30_measure_tvoc_blocking_read(&tvoc_ppb);
     return mp_obj_new_int(tvoc_ppb);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_tvoc_blocking_read_obj, measure_tvoc_blocking_read);
@@ -171,8 +171,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_tvoc_blocking_read_obj, measure_tvoc_bl
  */
 STATIC mp_obj_t get_iaq_baseline(mp_obj_t self_in)
 {
-	u32 baseline;
-	sgp_get_iaq_baseline(&baseline);
+	uint32_t baseline;
+	sgp30_get_iaq_baseline(&baseline);
     return mp_obj_new_int_from_uint(baseline);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_iaq_baseline_obj, get_iaq_baseline);
@@ -185,8 +185,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_iaq_baseline_obj, get_iaq_baseline);
  */
 STATIC mp_obj_t set_iaq_baseline(mp_obj_t self_in, mp_obj_t baseline)
 {
-	u32 bl = (u32)mp_obj_get_int64(baseline);
-    return mp_obj_new_int(sgp_set_iaq_baseline(bl));
+	uint32_t bl = (uint32_t)mp_obj_get_int64(baseline);
+    return mp_obj_new_int(sgp30_set_iaq_baseline(bl));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(set_iaq_baseline_obj, set_iaq_baseline);
 
@@ -194,9 +194,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(set_iaq_baseline_obj, set_iaq_baseline);
 
 STATIC mp_obj_t measure_iaq_blocking_read(mp_obj_t self_in)
 {
-	u16 tvoc_ppb;
-	u16 co2_eq_ppm;
-	sgp_measure_iaq_blocking_read(&tvoc_ppb, &co2_eq_ppm);
+	uint16_t tvoc_ppb;
+	uint16_t co2_eq_ppm;
+	sgp30_measure_iaq_blocking_read(&tvoc_ppb, &co2_eq_ppm);
 
     mp_obj_t tuple[2];
 	tuple[0] = mp_obj_new_int(co2_eq_ppm);
@@ -207,24 +207,24 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_iaq_blocking_read_obj, measure_iaq_bloc
 
 
 /*
- * The commands “measure_signals...” is intended for part verification and 
+ * The commands “measure_raw...” is intended for part verification and 
  * testing purposes. It returns the sensor raw signals which are used as inputs
  * for the on-chip calibration and baseline compensation algorithms. 
  * The command performs a measurement to which the sensor responds with raw 
  * signals in the order H2_signal (sout_H2) and Ethanol_signal (sout_EthOH).
  */
-STATIC mp_obj_t measure_signals_blocking_read(mp_obj_t self_in)
+STATIC mp_obj_t measure_raw_blocking_read(mp_obj_t self_in)
 {
-	u16 ethanol_signal;
-	u16 h2_signal;
-	sgp_measure_signals_blocking_read(&ethanol_signal, &h2_signal);
+	uint16_t ethanol_signal;
+	uint16_t h2_signal;
+	sgp30_measure_raw_blocking_read(&ethanol_signal, &h2_signal);
 
     mp_obj_t tuple[2];
 	tuple[0] = mp_obj_new_int(ethanol_signal);
 	tuple[1] = mp_obj_new_int(h2_signal);
 	return mp_obj_new_tuple(2, tuple);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_signals_blocking_read_obj, measure_signals_blocking_read);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_raw_blocking_read_obj, measure_raw_blocking_read);
 
 
 
@@ -248,8 +248,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_signals_blocking_read_obj, measure_sign
  */
 STATIC mp_obj_t set_absolute_humidity(mp_obj_t self_in, mp_obj_t absolute_humidity)
 {
-	u32 ah = (u32)mp_obj_get_int64(absolute_humidity);
-    return mp_obj_new_int(sgp_set_absolute_humidity(ah));
+	uint32_t ah = (uint32_t)mp_obj_get_int64(absolute_humidity);
+    return mp_obj_new_int(sgp30_set_absolute_humidity(ah));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(set_absolute_humidity_obj, set_absolute_humidity);
 
@@ -257,9 +257,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(set_absolute_humidity_obj, set_absolute_humidit
 
 STATIC mp_obj_t get_feature_set_version(mp_obj_t self_in)
 {
-	u16 feature_set_version;
-	u8 product_type;
-	sgp_get_feature_set_version(&feature_set_version, &product_type);
+	uint16_t feature_set_version;
+	uint8_t product_type;
+	sgp30_get_feature_set_version(&feature_set_version, &product_type);
 
     mp_obj_t tuple[2];
 	tuple[0] = mp_obj_new_int(feature_set_version);
@@ -272,8 +272,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_feature_set_version_obj, get_feature_set_ve
 
 STATIC mp_obj_t get_tvoc_factory_baseline(mp_obj_t self_in)
 {
-	u16 baseline;
-	sgp_get_tvoc_inceptive_baseline(&baseline);
+	uint16_t baseline;
+	sgp30_get_tvoc_inceptive_baseline(&baseline);
     return mp_obj_new_int_from_uint(baseline);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_tvoc_factory_baseline_obj, get_tvoc_factory_baseline);
@@ -282,8 +282,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_tvoc_factory_baseline_obj, get_tvoc_factory
 
 STATIC mp_obj_t set_tvoc_baseline(mp_obj_t self_in, mp_obj_t baseline)
 {
-	u16 bl = (u16)mp_obj_get_int(baseline);
-    return mp_obj_new_int(sgp_set_tvoc_baseline(bl));
+	uint16_t bl = (uint16_t)mp_obj_get_int(baseline);
+    return mp_obj_new_int(sgp30_set_tvoc_baseline(bl));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(set_tvoc_baseline_obj, set_tvoc_baseline);
 
@@ -291,7 +291,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(set_tvoc_baseline_obj, set_tvoc_baseline);
 
 STATIC mp_obj_t get_configured_address(mp_obj_t self_in)
 {
-    return mp_obj_new_int_from_uint(sgp_get_configured_address());
+    return mp_obj_new_int_from_uint(sgp30_get_configured_address());
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_configured_address_obj, get_configured_address);
 
@@ -304,8 +304,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_configured_address_obj, get_configured_addr
  */
 STATIC mp_obj_t measure_test(mp_obj_t self_in)
 {
-	u16 test_result;
-	sgp_measure_test(&test_result);
+	uint16_t test_result;
+	sgp30_measure_test(&test_result);
     return mp_obj_new_int_from_uint(test_result);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_test_obj, measure_test);
@@ -314,7 +314,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_test_obj, measure_test);
 
 STATIC mp_obj_t measure_tvoc(mp_obj_t self_in)
 {
-    return mp_obj_new_int(sgp_measure_tvoc());
+    return mp_obj_new_int(sgp30_measure_tvoc());
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_tvoc_obj, measure_tvoc);
 
@@ -322,7 +322,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_tvoc_obj, measure_tvoc);
 
 STATIC mp_obj_t measure_iaq(mp_obj_t self_in)
 {
-    return mp_obj_new_int(sgp_measure_iaq());
+    return mp_obj_new_int(sgp30_measure_iaq());
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_iaq_obj, measure_iaq);
 
@@ -330,24 +330,24 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_iaq_obj, measure_iaq);
 
 STATIC mp_obj_t measure_co2_eq(mp_obj_t self_in)
 {
-    return mp_obj_new_int(sgp_measure_co2_eq());
+    return mp_obj_new_int(sgp30_measure_co2_eq());
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_co2_eq_obj, measure_co2_eq);
 
 
 
-STATIC mp_obj_t measure_signals(mp_obj_t self_in)
+STATIC mp_obj_t measure_raw(mp_obj_t self_in)
 {
-    return mp_obj_new_int(sgp_measure_signals());
+    return mp_obj_new_int(sgp30_measure_raw());
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_signals_obj, measure_signals);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(measure_raw_obj, measure_raw);
 
 
 
 STATIC mp_obj_t read_co2_eq(mp_obj_t self_in)
 {
-	u16 result;
-	sgp_read_co2_eq(&result);
+	uint16_t result;
+	sgp30_read_co2_eq(&result);
     return mp_obj_new_int_from_uint(result);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(read_co2_eq_obj, read_co2_eq);
@@ -356,8 +356,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(read_co2_eq_obj, read_co2_eq);
 
 STATIC mp_obj_t read_tvoc(mp_obj_t self_in)
 {
-	u16 result;
-	sgp_read_tvoc(&result);
+	uint16_t result;
+	sgp30_read_tvoc(&result);
     return mp_obj_new_int_from_uint(result);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(read_tvoc_obj, read_tvoc);
@@ -366,9 +366,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(read_tvoc_obj, read_tvoc);
 
 STATIC mp_obj_t read_iaq(mp_obj_t self_in)
 {
-	u16 tvoc_ppb;
-	u16 co2_eq_ppm;
-	sgp_read_iaq(&tvoc_ppb, &co2_eq_ppm);
+	uint16_t tvoc_ppb;
+	uint16_t co2_eq_ppm;
+	sgp30_read_iaq(&tvoc_ppb, &co2_eq_ppm);
 
     mp_obj_t tuple[2];
 	tuple[0] = mp_obj_new_int(co2_eq_ppm);
@@ -379,18 +379,18 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(read_iaq_obj, read_iaq);
 
 
 
-STATIC mp_obj_t read_signals(mp_obj_t self_in)
+STATIC mp_obj_t read_raw(mp_obj_t self_in)
 {
-	u16 ethanol_signal;
-	u16 h2_signal;
-	sgp_read_signals(&ethanol_signal, &h2_signal);
+	uint16_t ethanol_signal;
+	uint16_t h2_signal;
+	sgp30_read_raw(&ethanol_signal, &h2_signal);
 
     mp_obj_t tuple[2];
 	tuple[0] = mp_obj_new_int(ethanol_signal);
 	tuple[1] = mp_obj_new_int(h2_signal);
 	return mp_obj_new_tuple(2, tuple);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(read_signals_obj, read_signals);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(read_raw_obj, read_raw);
 
 
 
@@ -406,7 +406,7 @@ STATIC const mp_rom_map_elem_t sgp30_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_get_iaq_baseline),					MP_ROM_PTR(&get_iaq_baseline_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_iaq_baseline),					MP_ROM_PTR(&set_iaq_baseline_obj) },
     { MP_ROM_QSTR(MP_QSTR_measure_iaq_blocking_read),			MP_ROM_PTR(&measure_iaq_blocking_read_obj) },
-    { MP_ROM_QSTR(MP_QSTR_measure_signals_blocking_read),		MP_ROM_PTR(&measure_signals_blocking_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_measure_raw_blocking_read),	    	MP_ROM_PTR(&measure_raw_blocking_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_absolute_humidity),				MP_ROM_PTR(&set_absolute_humidity_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_feature_set_version),				MP_ROM_PTR(&get_feature_set_version_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_tvoc_factory_baseline),			MP_ROM_PTR(&get_tvoc_factory_baseline_obj) },
@@ -416,11 +416,11 @@ STATIC const mp_rom_map_elem_t sgp30_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_measure_tvoc),						MP_ROM_PTR(&measure_tvoc_obj) },
     { MP_ROM_QSTR(MP_QSTR_measure_iaq),							MP_ROM_PTR(&measure_iaq_obj) },
     { MP_ROM_QSTR(MP_QSTR_measure_co2_eq),						MP_ROM_PTR(&measure_co2_eq_obj) },
-    { MP_ROM_QSTR(MP_QSTR_measure_signals),						MP_ROM_PTR(&measure_signals_obj) },
+    { MP_ROM_QSTR(MP_QSTR_measure_raw),				    		MP_ROM_PTR(&measure_raw_obj) },
     { MP_ROM_QSTR(MP_QSTR_read_co2_eq),							MP_ROM_PTR(&read_co2_eq_obj) },
     { MP_ROM_QSTR(MP_QSTR_read_tvoc),							MP_ROM_PTR(&read_tvoc_obj) },
     { MP_ROM_QSTR(MP_QSTR_read_iaq),							MP_ROM_PTR(&read_iaq_obj) },
-    { MP_ROM_QSTR(MP_QSTR_read_signals),						MP_ROM_PTR(&read_signals_obj) }
+    { MP_ROM_QSTR(MP_QSTR_read_raw),			    			MP_ROM_PTR(&read_raw_obj) }
 };
 STATIC MP_DEFINE_CONST_DICT(sgp30_locals_dict, sgp30_locals_dict_table);
 
@@ -480,7 +480,7 @@ void sensirion_i2c_init()
  * @param count   number of bytes to read from I2C and store in the buffer
  * @returns 0 on success, error code otherwise
  */
-s8 sensirion_i2c_read(u8 address, u8* data, u16 count)
+int8_t sensirion_i2c_read(uint8_t address, uint8_t* data, uint16_t count)
 {
 	return mp_i2c_master_read(i2c_obj, address, 0, 0, data, count, true);
 }
@@ -498,7 +498,7 @@ s8 sensirion_i2c_read(u8 address, u8* data, u16 count)
  * @param count   number of bytes to read from the buffer and send over I2C
  * @returns 0 on success, error code otherwise
  */
-s8 sensirion_i2c_write(u8 address, const u8* data, u16 count)
+int8_t sensirion_i2c_write(uint8_t address, const uint8_t* data, uint16_t count)
 {
 	return mp_i2c_master_write(i2c_obj, address, 0, 0, (uint8_t *)data, count, true);
 }
@@ -513,9 +513,9 @@ s8 sensirion_i2c_write(u8 address, const u8* data, u16 count)
  *
  * @param useconds the sleep time in microseconds
  */
-void sensirion_sleep_usec(u32 useconds) 
+void sensirion_sleep_usec(uint32_t useconds) 
 {
-	u32 msec = useconds / 1000;
+	uint32_t msec = useconds / 1000;
 	if (useconds % 1000 > 0) {
 		msec++;
 	}
