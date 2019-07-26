@@ -1,11 +1,10 @@
 from machine import reset # Импортируем для удобства вызова функции reset() из консоли repl
-import leds
 try:
     # Все что отрабатывает до подъема сети, обернем в блок отлова ошибок
     # Чтобы в любом случае, сеть у нас поднялась
-    import led_effects, leds
+    import leds, led_effects
     # Инициализируем объект эффекта - огонек бегущий по внешнему кольцу. С яркостью в 20%
-    effect = led_effects.EffectRunningLight(0, 0.2)
+    effect = led_effects.EffectRunningLight(0x000000, 0.2)
     led_effects.startEffect(effect)
 except:
     pass
@@ -17,7 +16,7 @@ import time
 led_effects.stopEffect()
 leds.setHoursHSB(40, 1, 0.2)
 
-#import webapp
+import webapp
 
 # Моргнем всеми светодиодами, зеленым цветом
 leds.setAllHSB(120, 1, 1)

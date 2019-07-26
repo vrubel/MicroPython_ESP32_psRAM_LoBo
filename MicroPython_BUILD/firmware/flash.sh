@@ -1,7 +1,7 @@
 #!/bin/bash
 
 FLASH_COMPORT="/dev/ttyUSB0"
-FLASH_BDRATE="460800"
+FLASH_BDRATE="115200"
 
 get_arguments() {
     POSITIONAL_ARGS=()

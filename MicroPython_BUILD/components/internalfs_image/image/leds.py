@@ -1,7 +1,7 @@
-import machine, config
+import machine, config, indicator
 
-leds = machine.Neopixel(machine.Pin(config.pin_led), config.count_leds, machine.Neopixel.TYPE_RGB)
-leds.timings(((1200,600), (600, 1200), 60000))
+leds = indicator.IFunNeopixel()
+
 adc=machine.ADC(32)
 adc.atten(adc.ATTN_6DB)
 
@@ -41,20 +41,20 @@ def test_mic():
 
 def setAllRGB(color):
     """Устанавливает цвет всех светодиодов в девайсе"""
-    leds.set(1, color, 0, config.count_leds)
+    leds.set(1, color, config.count_leds)
 
 
 def setHoursRGB(color):
     """Устанавливет цвет диодов внутреннего кольца"""
     for led in config.getLedNums4Hours():
-        leds.set(led, color, 0, 1, False)
+        leds.set(led, color,  1, False)
     leds.show()
 
 
 def setMinutesRGB(color):
     """Устанавливет цвет диодов внешнего кольца"""
     for led in config.getLedNums4Minutes():
-        leds.set(led, color, 0, 1, False)
+        leds.set(led, color, 1, False)
     leds.show()
 
 

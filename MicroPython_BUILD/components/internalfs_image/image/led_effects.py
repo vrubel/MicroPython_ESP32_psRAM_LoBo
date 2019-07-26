@@ -1,7 +1,6 @@
 import leds, config, machine
 
 
-
 class EffectRunningLight:
     """
     Класс реализует эффект - бегущий по внешнему кольцу огонек. Цвет и яркость огонька задаются параметрами
@@ -11,15 +10,16 @@ class EffectRunningLight:
         Выключаем все светодиоды, включаем один светодиод во внешнем кольце с указанным цветом и яркостью
         """
         leds.setAllRGB(0)
-        leds.leds.setHSB(1,hue,1,brightness)
     
         self.ar_mins = config.getLedNums4Minutes()
         self.len_mins = len(self.ar_mins)
 
+        leds.leds.setHSB(self.ar_mins[0], hue, 1, brightness)
+
 
     def __deinit__(self):
         # Выключим все светодиоды
-        leds.setAllRGB(100)
+        leds.setAllRGB(0)
 
 
     def tick(self, arg):
@@ -32,9 +32,9 @@ class EffectRunningLight:
                 first_rgb = leds.leds.get(self.ar_mins[i])
 
             if i==self.len_mins-1:
-                leds.leds.set(self.ar_mins[i], first_rgb, 0, 1, False)
+                leds.leds.set(self.ar_mins[i], first_rgb, 1, False)
             else:
-                leds.leds.set(self.ar_mins[i], leds.leds.get(self.ar_mins[i+1]), 0, 1, False)
+                leds.leds.set(self.ar_mins[i], leds.leds.get(self.ar_mins[i+1]), 1, False)
         leds.leds.show()
     
 
